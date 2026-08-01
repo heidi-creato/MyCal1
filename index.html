@@ -309,7 +309,533 @@ function buildFields(){
   list.innerHTML = FIELDS.map(f => `
     <div class="field">
       <label class="field-label" for="${f}-input">${FIELD_KEYS[f]}</label>
-      <input class="field-input" type="number" id="${f}-input" step="0.01" min="0" inputmode="decimal" placeholder="0.00">
+      <input class="field-input" type="text" id="${f}-input" inputmode="decimal" pattern="[0-9]*\\.?[0-9]*" lang="en" dir="ltr" placeholder="0.00">
+      <div class="field-total" id="${f}-total">0.00</div>
+    </div>
+  `).join('');
+}
+
+function init(){
+  buildFields();
+  setupEventListeners();
+  updateDisplay();
+  preventDoubleTapZoom();
+  startClock();
+}
+
+function preventDoubleTapZoom(){
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', function(e){
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) e.preventDefault();
+    lastTouchEnd = now;
+  }, false);
+}
+
+function startClock(){
+  const el = document.getElementById('clock');
+  const render = () => {
+    const now = new Date();
+    el.textContent = now.toLocaleString('ar-EG', { hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit' });
+  };
+  render();
+  setInterval(render, 30000);
+}
+
+function setupEventListeners(){
+  FIELDS.forEach(field => {
+    const input = document.getElementById(`${field}-input`);
+
+    input.addEventListener('keypress', e => {
+      if (e.key === 'Enter'){
+        e.preventDefault();
+        commitField(field, input);
+        input.blur();
+      }
+    });
+    input.addEventListener('blur', () => commitField(field, input));
+    input.addEventListener('focus', () => { setTimeout(() => input.select(), 100); });
+    input.addEventListener('input', e => {
+      let value = e.target.value;
+      value = value.replace(',', '.');
+      value = value.replace(/[^0-9.]/g, '');
+      const parts = value.split('.');
+      if (parts.length > 2) value = parts[0] + '.' + parts.slice(1).join('');
+      e.target.value = value;
+    });
+  });
+
+  document.getElementById('copyBtn').addEventListener('click', copyResult);
+}
+
+function commitField(field, input){
+  if (input.value){
+    addNumber(field, input.value);
+    input.value = '';
+  }
+}
+
+function addNumber(fieldName, value){
+  try{
+    const numValue = parseFloat(value);
+    if (isNaN(numValue)) throw new Error('الرجاء إدخال رقم صحيح');
+    if (numValue < 0) throw new Error('لا يُسمح بإدخال أرقام سالبة');
+    if (numValue === 0) return;
+
+    const fieldKey = FIELD_KEYS[fieldName];
+    state.totals[fieldKey] += numValue;
+    state.undoStack.push({ field: fieldKey, value: numValue });
+    if (state.undoStack.length > 200) state.undoStack.shift();
+
+    state.history[fieldKey].push(numValue);
+    if (state.history[fieldKey].length > 100) state.history[fieldKey].shift();
+
+    updateDisplay();
+    hideMessage('error');
+    if ('vibrate' in navigator) navigator.vibrate(40);
+  }catch(err){
+    showMessage('error', err.message);
+    if ('vibrate' in navigator) navigator.vibrate([100,50,100]);
+  }
+}
+
+function calculate(){
+  try{
+    const me = (state.totals['Net'] * 0.4 + state.totals['Tip'] - state.totals['Knt']);
+    const final = (state.totals['Bar'] - (state.totals['Tnk'] + state.totals['Other']) - me);
+    lastFinal = final;
+
+    const heroEl = document.getElementById('heroCard');
+    const finalEl = document.getElementById('final-value');
+    const meSubEl = document.getElementById('me-sub');
+    finalEl.textContent = final.toFixed(2);
+    meSubEl.textContent = `لي: ${me.toFixed(2)}`;
+    heroEl.className = `hero ${final >= 0 ? 'pos' : 'neg'}`;
+  }catch(err){
+    showMessage('error', 'خطأ في الحساب: ' + err.message);
+  }
+}
+
+function updateDisplay(){
+  FIELDS.forEach(f => {
+    const key = FIELD_KEYS[f];
+    document.getElementById(`${f}-total`).textContent = state.totals[key].toFixed(2);
+  });
+  calculate();
+  updateHistoryDisplay();
+}
+
+function updateHistoryDisplay(){
+  const historyContent = document.getElementById('historyContent');
+  historyContent.innerHTML = '';
+
+  const hasAny = Object.values(state.history).some(arr => arr.length > 0);
+  if (!hasAny){
+    historyContent.innerHTML = '<div class="history-empty">لا توجد إدخالات بعد</div>';
+    return;
+  }
+
+  Object.keys(state.history).forEach(field => {
+    if (state.history[field].length > 0){
+      const entry = document.createElement('div');
+      entry.className = 'history-entry';
+
+      const fieldDiv = document.createElement('div');
+      fieldDiv.className = 'history-field';
+      fieldDiv.textContent = field;
+
+      const valuesDiv = document.createElement('div');
+      valuesDiv.className = 'history-values';
+      valuesDiv.innerHTML = state.history[field].map(v => v.toFixed(2)).join('<br>');
+
+      const totalDiv = document.createElement('div');
+      totalDiv.className = 'history-total';
+      totalDiv.textContent = `Total: ${state.totals[field].toFixed(2)}`;
+
+      entry.append(fieldDiv, valuesDiv, totalDiv);
+      historyContent.appendChild(entry);
+    }
+  });
+}
+
+function undoLastAction(){
+  if (state.undoStack.length === 0){
+    showMessage('info', 'لا يوجد شيء للتراجع عنه');
+    return;
+  }
+  const last = state.undoStack.pop();
+  state.totals[last.field] -= last.value;
+  if (state.history[last.field].length > 0) state.history[last.field].pop();
+  updateDisplay();
+  hideMessage('info');
+  if ('vibrate' in navigator) navigator.vibrate(80);
+}
+
+function resetAll(){
+  Object.keys(state.totals).forEach(f => state.totals[f] = 0);
+  document.querySelectorAll('.field-input').forEach(i => i.value = '');
+  clearHistory();
+  updateDisplay();
+  if ('vibrate' in navigator) navigator.vibrate([50,50,50]);
+}
+
+function toggleHistory(){
+  const panel = document.getElementById('historyPanel');
+  const toggleBtn = document.getElementById('historyToggle');
+  state.historyVisible = !state.historyVisible;
+  panel.classList.toggle('visible', state.historyVisible);
+  toggleBtn.classList.toggle('active', state.historyVisible);
+  if ('vibrate' in navigator) navigator.vibrate(40);
+}
+
+function clearHistory(){
+  Object.keys(state.history).forEach(f => state.history[f] = []);
+  state.undoStack = [];
+  updateHistoryDisplay();
+  if ('vibrate' in navigator) navigator.vibrate(80);
+}
+
+function copyResult(){
+  const text = `التصفية النهائية: ${lastFinal.toFixed(2)}`;
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text)
+      .then(() => showMessage('info', 'تم نسخ النتيجة'))
+      .catch(() => showMessage('error', 'تعذر نسخ النتيجة'));
+  }else{
+    showMessage('error', 'النسخ غير مدعوم على هذا المتصفح');
+  }
+}
+
+function showMessage(type, msg){
+  hideMessage(type === 'error' ? 'info' : 'error');
+  const el = document.getElementById(`${type}Message`);
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(msgTimer);
+  msgTimer = setTimeout(() => hideMessage(type), 2600);
+}
+
+function hideMessage(type){
+  const el = document.getElementById(`${type}Message`);
+  el.classList.remove('show');
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>حاسبة التصفية</title>
+<style>
+  :root{
+    --bg-1:#0a0c11;
+    --bg-2:#11141b;
+    --surface:rgba(255,255,255,.045);
+    --surface-border:rgba(255,255,255,.09);
+    --line:rgba(255,255,255,.08);
+    --text:#f2f4f7;
+    --muted:#8a90a0;
+    --muted-2:#5d6273;
+    --accent:#5b8cff;
+    --accent-soft:rgba(91,140,255,.14);
+    --pos:#2fd695;
+    --pos-soft:rgba(47,214,149,.12);
+    --neg:#ff5c6c;
+    --neg-soft:rgba(255,92,108,.12);
+    --font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    --font-mono:ui-monospace,'SFMono-Regular','Menlo','Consolas','Liberation Mono',monospace;
+    --safe-t:env(safe-area-inset-top,0px);
+    --safe-b:env(safe-area-inset-bottom,0px);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    font-family:var(--font);
+    color:var(--text);
+    background:
+      radial-gradient(900px 500px at 12% -8%, rgba(91,140,255,.16) 0%, transparent 55%),
+      radial-gradient(800px 480px at 105% 8%, rgba(47,214,149,.10) 0%, transparent 55%),
+      linear-gradient(180deg, var(--bg-2), var(--bg-1) 60%);
+    min-height:100vh;
+    padding:calc(16px + var(--safe-t)) 14px calc(28px + var(--safe-b));
+    display:flex; justify-content:center;
+  }
+  .app{ width:100%; max-width:460px; }
+
+  /* ---------- header ---------- */
+  .brandbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:2px 4px 18px;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; }
+  .brand-mark{
+    width:34px;height:34px;border-radius:10px;
+    background:linear-gradient(135deg, var(--accent), #7ea2ff);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 6px 16px -6px rgba(91,140,255,.6);
+  }
+  .brand-mark svg{ width:18px; height:18px; stroke:#fff; }
+  .brand h1{ font-size:17px; font-weight:800; letter-spacing:.2px; }
+  .brand small{ display:block; font-size:11px; color:var(--muted); font-weight:500; margin-top:1px; }
+  .clock{ font-family:var(--font-mono); font-size:11.5px; color:var(--muted-2); direction:ltr; }
+
+  /* ---------- hero (final result) ---------- */
+  .hero{
+    position:relative;
+    border-radius:24px;
+    padding:26px 22px;
+    text-align:center;
+    background:var(--surface);
+    border:1px solid var(--surface-border);
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+    box-shadow:0 22px 50px -26px rgba(0,0,0,.7);
+    overflow:hidden;
+    transition:box-shadow .3s ease;
+  }
+  .hero::before{
+    content:"";
+    position:absolute; inset:-40%;
+    background:radial-gradient(closest-side, var(--glow-color, var(--accent-soft)), transparent 70%);
+    opacity:.6; pointer-events:none;
+    transition:background .3s ease;
+  }
+  .hero.pos{ --glow-color: var(--pos-soft); }
+  .hero.neg{ --glow-color: var(--neg-soft); }
+  .hero-label{
+    position:relative; font-size:12px; font-weight:700; letter-spacing:1.5px;
+    text-transform:uppercase; color:var(--muted); margin-bottom:10px;
+  }
+  .hero-value{
+    position:relative; font-family:var(--font-mono); font-weight:800;
+    font-size:44px; letter-spacing:.5px; direction:ltr;
+    color:var(--text);
+  }
+  .hero.pos .hero-value{ color:var(--pos); }
+  .hero.neg .hero-value{ color:var(--neg); }
+  .hero-sub{
+    position:relative; margin-top:6px; font-family:var(--font-mono);
+    font-size:12.5px; font-weight:600; color:var(--muted); direction:ltr;
+  }
+  .copy-chip{
+    position:relative; margin-top:14px; padding:8px 18px; border-radius:100px;
+    border:1px solid var(--surface-border); background:rgba(255,255,255,.04);
+    color:var(--muted); font-size:12px; font-weight:700; cursor:pointer;
+    display:inline-flex; align-items:center; gap:6px;
+  }
+  .copy-chip:active{ transform:scale(.96); }
+  .copy-chip svg{ width:13px; height:13px; }
+
+  /* ---------- panel ---------- */
+  .panel{
+    margin-top:14px;
+    border-radius:22px;
+    background:var(--surface);
+    border:1px solid var(--surface-border);
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+    padding:8px 18px 6px;
+  }
+
+  .msg{
+    display:none; align-items:center; justify-content:center; gap:8px;
+    font-size:13px; font-weight:700; text-align:center;
+    padding:10px 12px; border-radius:12px; margin:12px 0;
+  }
+  .msg.show{ display:flex; animation:pop .18s ease; }
+  .msg.error{ background:var(--neg-soft); color:#ff8791; }
+  .msg.info{ background:var(--accent-soft); color:#a9c2ff; }
+  @keyframes pop{ from{opacity:0; transform:translateY(-4px);} to{opacity:1; transform:translateY(0);} }
+
+  .field-list{ display:flex; flex-direction:column; }
+  .field{
+    display:flex; align-items:center; gap:12px;
+    padding:14px 2px;
+    border-bottom:1px solid var(--line);
+  }
+  .field:last-child{ border-bottom:none; }
+  .field-label{
+    width:52px; flex-shrink:0;
+    font-family:var(--font-mono); font-size:12.5px; font-weight:800;
+    letter-spacing:1px; text-transform:uppercase; color:var(--muted);
+  }
+  .field-input{
+    flex:1; min-width:0;
+    background:transparent; border:none; border-bottom:1.5px solid var(--line);
+    padding:8px 2px; font-family:var(--font-mono); font-size:17px; font-weight:600;
+    color:var(--text); text-align:left; direction:ltr;
+    -webkit-appearance:none; appearance:none;
+    transition:border-color .2s ease;
+  }
+  .field-input::placeholder{ color:var(--muted-2); font-weight:500; }
+  .field-input:focus{ outline:none; border-bottom-color:var(--accent); }
+  /* remove number spin buttons */
+  .field-input::-webkit-outer-spin-button,
+  .field-input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+  .field-input[type=number]{ -moz-appearance:textfield; }
+
+  .field-total{
+    font-family:var(--font-mono); font-size:12.5px; font-weight:700;
+    color:var(--muted-2); min-width:56px; text-align:left; direction:ltr;
+    flex-shrink:0;
+  }
+
+  /* ---------- actions ---------- */
+  .actions{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
+    margin-top:16px;
+  }
+  .btn{
+    padding:13px 6px; border:1px solid var(--surface-border); border-radius:16px;
+    background:var(--surface); color:var(--muted);
+    font-size:11px; font-weight:700; letter-spacing:.2px;
+    cursor:pointer; touch-action:manipulation;
+    -webkit-user-select:none; user-select:none;
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+    transition:transform .12s ease, background .15s ease, color .15s ease;
+    backdrop-filter:blur(18px);
+  }
+  .btn svg{ width:18px; height:18px; }
+  .btn:active{ transform:scale(.94); }
+  .btn-history.active{ background:var(--accent-soft); color:var(--accent); border-color:transparent; }
+
+  /* ---------- history ---------- */
+  .history-panel{
+    max-height:0; overflow:hidden; opacity:0;
+    transition:max-height .32s ease, opacity .25s ease, margin .32s ease;
+  }
+  .history-panel.visible{ max-height:60vh; opacity:1; margin-top:14px; }
+  .history-inner{
+    background:var(--surface); border:1px solid var(--surface-border);
+    border-radius:20px; padding:16px;
+    max-height:60vh; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    backdrop-filter:blur(18px);
+  }
+  .history-title{
+    font-weight:800; font-size:12px; letter-spacing:1px;
+    text-transform:uppercase; color:var(--muted); margin-bottom:12px; text-align:center;
+  }
+  .history-empty{ color:var(--muted-2); text-align:center; font-size:13px; padding:14px 0; }
+  .history-entry{
+    background:rgba(255,255,255,.03); border:1px solid var(--line);
+    border-radius:14px; padding:12px 14px; margin-bottom:8px;
+  }
+  .history-entry:last-child{ margin-bottom:0; }
+  .history-field{
+    font-family:var(--font-mono); font-weight:800; font-size:12px;
+    color:var(--accent); margin-bottom:6px; letter-spacing:.4px;
+  }
+  .history-values{
+    font-family:var(--font-mono); font-size:12.5px; color:var(--muted);
+    line-height:1.9; direction:ltr; text-align:left;
+  }
+  .history-total{
+    font-family:var(--font-mono); font-size:12.5px; font-weight:800;
+    color:var(--text); margin-top:6px; padding-top:6px;
+    border-top:1px dashed var(--line); direction:ltr; text-align:left;
+  }
+  .history-inner::-webkit-scrollbar{ width:6px; }
+  .history-inner::-webkit-scrollbar-thumb{ background:rgba(255,255,255,.12); border-radius:3px; }
+
+  @media(max-width:360px){
+    .hero-value{ font-size:36px; }
+    .field-label{ width:44px; font-size:11.5px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="brandbar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z" opacity="0"/><path d="M6 16l4-6 3 4 5-8"/></svg>
+      </div>
+      <div>
+        <h1>حاسبة التصفية</h1>
+        <small>تصفية سريعة من الموبايل</small>
+      </div>
+    </div>
+    <div class="clock" id="clock"></div>
+  </div>
+
+  <div class="hero pos" id="heroCard">
+    <div class="hero-label">التصفية النهائية</div>
+    <div class="hero-value" id="final-value">0.00</div>
+    <div class="hero-sub" id="me-sub">لي: 0.00</div>
+    <button class="copy-chip" id="copyBtn" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+      نسخ النتيجة
+    </button>
+  </div>
+
+  <div class="panel">
+    <div class="msg error" id="errorMessage"></div>
+    <div class="msg info" id="infoMessage"></div>
+    <div class="field-list" id="fieldList"></div>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-undo" type="button" onclick="undoLastAction()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-1"/></svg>
+      تراجع
+    </button>
+    <button class="btn btn-reset" type="button" onclick="resetAll()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+      إعادة تعيين
+    </button>
+    <button class="btn btn-history" id="historyToggle" type="button" onclick="toggleHistory()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+      السجل
+    </button>
+    <button class="btn btn-clear" type="button" onclick="clearHistory()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+      مسح
+    </button>
+  </div>
+
+  <div class="history-panel" id="historyPanel">
+    <div class="history-inner">
+      <div class="history-title">سجل الإدخالات</div>
+      <div id="historyContent"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+'use strict';
+
+/*
+  الحقول (Net / Tip / Bar / Tnk / Knt / Other) أبقيت كما هي بالاسم لأنها مصطلحات خاصة بالتطبيق.
+  المعادلات الرياضية لم تتغيّر إطلاقاً:
+    Me    = Net*0.4 + Tip - Knt     (تُحسب داخلياً فقط ولا تُعرض بالواجهة)
+    Final = Bar - (Tnk + Other) - Me
+*/
+
+const FIELDS = ['net','tip','bar','tnk','knt','other'];
+const FIELD_KEYS = { net:'Net', tip:'Tip', bar:'Bar', tnk:'Tnk', knt:'Knt', other:'Other' };
+
+const state = {
+  totals:{ Net:0, Tip:0, Bar:0, Tnk:0, Knt:0, Other:0 },
+  history:{ Net:[], Tip:[], Bar:[], Tnk:[], Knt:[], Other:[] },
+  undoStack: [],
+  historyVisible: false
+};
+
+let msgTimer = null;
+let lastFinal = 0;
+
+function buildFields(){
+  const list = document.getElementById('fieldList');
+  list.innerHTML = FIELDS.map(f => `
+    <div class="field">
+      <label class="field-label" for="${f}-input">${FIELD_KEYS[f]}</label>
+      <input class="field-input" type="text" id="${f}-input" inputmode="decimal" pattern="[0-9]*\\.?[0-9]*" lang="en" dir="ltr" placeholder="0.00">
       <div class="field-total" id="${f}-total">0.00</div>
     </div>
   `).join('');
