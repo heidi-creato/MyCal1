@@ -36,17 +36,17 @@
       radial-gradient(800px 480px at 105% 8%, rgba(47,214,149,.10) 0%, transparent 55%),
       linear-gradient(180deg, var(--bg-2), var(--bg-1) 60%);
     min-height:100vh;
-    padding:calc(10px + var(--safe-t)) 14px calc(14px + var(--safe-b));
+    padding:calc(14px + var(--safe-t)) 14px calc(20px + var(--safe-b));
     display:flex; justify-content:center;
   }
   .app{ width:100%; max-width:460px; }
 
   /* ---------- header ---------- */
   .brandbar{
-    display:flex; align-items:center;
-    padding:2px 4px 10px;
+    display:flex; align-items:center; justify-content:flex-end;
+    padding:2px 4px 12px;
   }
-  .brand{ display:flex; flex-direction:row-reverse; align-items:center; gap:10px; }
+  .brand{ display:flex; direction:ltr; align-items:center; gap:10px; text-align:left; }
   .brand-mark{
     width:30px;height:30px;border-radius:9px;
     background:linear-gradient(135deg, var(--accent), #7ea2ff);
@@ -55,14 +55,14 @@
     flex-shrink:0;
   }
   .brand-mark svg{ width:16px; height:16px; stroke:#fff; }
-  .brand h1{ font-size:16px; font-weight:800; letter-spacing:.2px; }
-  .brand small{ display:block; font-size:10.5px; color:var(--muted); font-weight:500; margin-top:1px; }
+  .brand h1{ font-size:16px; font-weight:800; letter-spacing:.2px; text-align:left; }
+  .brand small{ display:block; font-size:10.5px; color:var(--muted); font-weight:600; margin-top:1px; text-transform:uppercase; letter-spacing:.4px; text-align:left; }
 
   /* ---------- hero (final result) ---------- */
   .hero{
     position:relative;
     border-radius:20px;
-    padding:16px 20px;
+    padding:20px 22px;
     text-align:center;
     background:var(--surface);
     border:1px solid var(--surface-border);
@@ -81,21 +81,21 @@
   .hero.neg{ --glow-color: var(--neg-soft); }
   .hero-label{
     position:relative; font-size:11px; font-weight:700; letter-spacing:1.5px;
-    text-transform:uppercase; color:var(--muted); margin-bottom:4px;
+    text-transform:uppercase; color:var(--muted); margin-bottom:6px;
   }
   .hero-value{
     position:relative; font-family:var(--font-mono); font-weight:800;
-    font-size:32px; letter-spacing:.5px; direction:ltr;
+    font-size:37px; letter-spacing:.5px; direction:ltr;
     color:var(--text);
   }
   .hero.pos .hero-value{ color:var(--pos); }
   .hero.neg .hero-value{ color:var(--neg); }
   .hero-sub{
-    position:relative; margin-top:3px; font-family:var(--font-mono);
+    position:relative; margin-top:5px; font-family:var(--font-mono);
     font-size:12px; font-weight:600; color:var(--muted); direction:ltr;
   }
   .copy-chip{
-    position:relative; margin-top:8px; padding:6px 16px; border-radius:100px;
+    position:relative; margin-top:11px; padding:8px 18px; border-radius:100px;
     border:1px solid var(--surface-border); background:rgba(255,255,255,.04);
     color:var(--muted); font-size:11px; font-weight:700; cursor:pointer;
     display:inline-flex; align-items:center; gap:6px;
@@ -105,11 +105,11 @@
 
   /* ---------- panel ---------- */
   .panel{
-    margin-top:10px;
+    margin-top:12px;
     border-radius:20px;
     background:var(--surface);
     border:1px solid var(--surface-border);
-    padding:2px 16px 2px;
+    padding:6px 16px 6px;
   }
 
   .msg{
@@ -125,7 +125,7 @@
   .field-list{ display:flex; flex-direction:column; }
   .field{
     display:flex; align-items:center; gap:10px;
-    padding:8px 2px;
+    padding:11px 2px;
     border-bottom:1px solid var(--line);
   }
   .field:last-child{ border-bottom:none; }
@@ -137,7 +137,7 @@
   .field-input{
     flex:1; min-width:0;
     background:transparent; border:none; border-bottom:1.5px solid var(--line);
-    padding:5px 2px; font-family:var(--font-mono); font-size:15px; font-weight:600;
+    padding:7px 2px; font-family:var(--font-mono); font-size:16px; font-weight:600;
     color:var(--text); text-align:left; direction:ltr;
     -webkit-appearance:none; appearance:none;
     transition:border-color .2s ease;
@@ -158,10 +158,10 @@
   /* ---------- actions ---------- */
   .actions{
     display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
-    margin-top:10px;
+    margin-top:13px;
   }
   .btn{
-    padding:9px 6px; border:1px solid var(--surface-border); border-radius:14px;
+    padding:11px 6px; border:1px solid var(--surface-border); border-radius:14px;
     background:var(--surface); color:var(--muted);
     font-size:10.5px; font-weight:700; letter-spacing:.2px;
     cursor:pointer; touch-action:manipulation;
@@ -169,7 +169,7 @@
     display:flex; flex-direction:column; align-items:center; gap:4px;
     transition:transform .12s ease, background .15s ease, color .15s ease;
   }
-  .btn svg{ width:16px; height:16px; }
+  .btn svg{ width:17px; height:17px; }
   .btn:active{ transform:scale(.94); }
   .btn-history.active{ background:var(--accent-soft); color:var(--accent); border-color:transparent; }
 
@@ -226,7 +226,7 @@
       </div>
       <div>
         <h1>MyCal 1.6</h1>
-        <small>your professional calculator</small>
+        <small>Your Professional Calculator</small>
       </div>
     </div>
   </div>
