@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>حاسبة التصفية</title>
 
-<!-- أيقونات للتطبيق (شاشة رئيسية) -->
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%235b8cff'/%3E%3Ctext x='32' y='44' font-family='Arial' font-size='40' font-weight='bold' fill='white' text-anchor='middle'%3E%2B%3C/text%3E%3C/svg%3E">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%235b8cff'/%3E%3Ctext x='32' y='44' font-family='Arial' font-size='40' font-weight='bold' fill='white' text-anchor='middle'%3E%2B%3C/text%3E%3C/svg%3E">
+<!-- أيقونات للشاشة الرئيسية (آلة حاسبة) -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%235b8cff'/%3E%3Crect x='16' y='16' width='32' height='24' rx='4' fill='%23ffffff'/%3E%3Ctext x='20' y='33' font-family='Arial' font-size='12' fill='%235b8cff' font-weight='bold'%3E123%3C/text%3E%3Crect x='16' y='44' width='32' height='8' rx='4' fill='%23ffffff'/%3E%3Ctext x='20' y='52' font-family='Arial' font-size='8' fill='%235b8cff' font-weight='bold'%3E%2B-%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%235b8cff'/%3E%3Crect x='16' y='16' width='32' height='24' rx='4' fill='%23ffffff'/%3E%3Ctext x='20' y='33' font-family='Arial' font-size='12' fill='%235b8cff' font-weight='bold'%3E123%3C/text%3E%3Crect x='16' y='44' width='32' height='8' rx='4' fill='%23ffffff'/%3E%3Ctext x='20' y='52' font-family='Arial' font-size='8' fill='%235b8cff' font-weight='bold'%3E%2B-%3C/text%3E%3C/svg%3E">
 
 <style>
   :root{
@@ -63,7 +63,7 @@
   .brand h1{ font-size:16px; font-weight:800; letter-spacing:.2px; text-align:left; }
   .brand small{ display:block; font-size:10.5px; color:var(--muted); font-weight:600; margin-top:1px; text-transform:uppercase; letter-spacing:.4px; text-align:left; }
 
-  /* ---------- hero (final result) ---------- */
+  /* ---------- hero ---------- */
   .hero{
     position:relative;
     border-radius:20px;
@@ -129,7 +129,7 @@
 
   .field-list{ display:flex; flex-direction:column; }
   .field{
-    display:flex; align-items:center; gap:6px;
+    display:flex; align-items:center; gap:10px;
     padding:11px 2px;
     border-bottom:1px solid var(--line);
   }
@@ -152,21 +152,6 @@
   .field-input::-webkit-outer-spin-button,
   .field-input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
   .field-input[type=number]{ -moz-appearance:textfield; }
-
-  .field-add{
-    flex-shrink:0;
-    width:32px; height:32px;
-    border-radius:10px;
-    border:1px solid var(--surface-border);
-    background:var(--accent-soft);
-    color:var(--accent);
-    font-size:20px;
-    display:flex; align-items:center; justify-content:center;
-    cursor:pointer;
-    transition:transform .12s ease, background .15s ease;
-    touch-action:manipulation;
-  }
-  .field-add:active{ transform:scale(.88); background:var(--accent); color:#fff; }
   .field-total{
     font-family:var(--font-mono); font-size:11.5px; font-weight:700;
     color:var(--muted-2); min-width:50px; text-align:left; direction:ltr;
@@ -231,7 +216,6 @@
   @media(max-width:360px){
     .hero-value{ font-size:36px; }
     .field-label{ width:38px; font-size:11px; }
-    .field-add{ width:28px; height:28px; font-size:16px; }
   }
 </style>
 </head>
@@ -312,56 +296,51 @@ let lastFinal = 0;
 
 function buildFields(){
   const list = document.getElementById('fieldList');
+  // أزلنا زر + نهائياً
   list.innerHTML = FIELDS.map(f => `
     <div class="field">
       <label class="field-label" for="${f}-input">${FIELD_KEYS[f]}</label>
       <input class="field-input" type="text" id="${f}-input" inputmode="decimal" pattern="[0-9]*\\.?[0-9]*" lang="en" dir="ltr" placeholder="0.00" autocomplete="off">
-      <button class="field-add" data-field="${f}" type="button" aria-label="إضافة">+</button>
       <div class="field-total" id="${f}-total">0.00</div>
     </div>
   `).join('');
 
-  // ربط الأزرار
-  document.querySelectorAll('.field-add').forEach(btn => {
-    btn.addEventListener('click', function(e){
-      const field = this.dataset.field;
-      const input = document.getElementById(`${field}-input`);
-      const val = input.value.trim();
-      if (val !== '') {
-        addNumber(field, val, true); // clear after add
-      } else {
-        showMessage('info', 'الرجاء إدخال قيمة');
-        input.focus();
-      }
-    });
-  });
-
-  // ربط أحداث الإدخال
   FIELDS.forEach(field => {
     const input = document.getElementById(`${field}-input`);
 
+    // الإضافة بالضغط على Enter (يبقي لوحة المفاتيح مفتوحة)
     input.addEventListener('keypress', e => {
       if (e.key === 'Enter'){
         e.preventDefault();
         const val = input.value.trim();
         if (val !== '') {
-          addNumber(field, val, true);
-          // الانتقال للحقل التالي
-          const fields = FIELDS;
-          const idx = fields.indexOf(field);
-          if (idx < fields.length - 1) {
-            document.getElementById(`${fields[idx+1]}-input`).focus();
-          } else {
-            // إذا كان الأخير، يبقى في نفس الحقل
-            input.focus();
-          }
+          addNumber(field, val, true, true); // مسح وإعادة تركيز
         } else {
           showMessage('info', 'الرجاء إدخال قيمة');
         }
       }
     });
 
-    // تصفية المدخلات
+    // الإضافة عند فقدان التركيز (Done/تم) مع إعادة تركيز ذكية
+    input.addEventListener('blur', function(e) {
+      const val = this.value.trim();
+      if (val !== '') {
+        const fieldName = field;
+        // نضيف القيمة ونمسح الحقل لكن لا نعيد التركيز فوراً
+        addNumber(fieldName, val, true, false);
+        // ننتظر قليلاً لنتأكد أن المستخدم لم ينقر على زر (تراجع، سجل، الخ)
+        setTimeout(() => {
+          const active = document.activeElement;
+          // إذا كان العنصر النشط ليس زراً وليس حقل إدخال آخر، نعيد التركيز لفتح الكيبورد
+          if (active && active.tagName !== 'BUTTON' && active.tagName !== 'INPUT') {
+            const inputEl = document.getElementById(`${fieldName}-input`);
+            if (inputEl) inputEl.focus();
+          }
+        }, 150);
+      }
+    });
+
+    // فلترة الأرقام
     input.addEventListener('input', e => {
       let value = e.target.value;
       value = value.replace(',', '.');
@@ -371,12 +350,12 @@ function buildFields(){
       e.target.value = value;
     });
 
-    // تحديد النص عند التركيز
+    // تحديد النص عند التركيز لتسهيل المسح
     input.addEventListener('focus', () => { setTimeout(() => input.select(), 100); });
   });
 }
 
-function addNumber(fieldName, value, clearInput = false){
+function addNumber(fieldName, value, clearInput = true, refocus = false){
   try{
     const numValue = parseFloat(value);
     if (isNaN(numValue)) throw new Error('الرجاء إدخال رقم صحيح');
@@ -394,12 +373,14 @@ function addNumber(fieldName, value, clearInput = false){
     updateDisplay();
     hideMessage('error');
 
-    // مسح الحقل إذا طُلب
     if (clearInput) {
       const input = document.getElementById(`${fieldName}-input`);
-      if (input) input.value = '';
-      // إعادة التركيز
-      setTimeout(() => { if (input) input.focus(); }, 50);
+      if (input) {
+        input.value = '';
+        if (refocus) {
+          setTimeout(() => { input.focus(); }, 50);
+        }
+      }
     }
 
     if ('vibrate' in navigator) navigator.vibrate(40);
@@ -531,13 +512,6 @@ function hideMessage(type){
   el.classList.remove('show');
 }
 
-document.addEventListener('DOMContentLoaded', init);
-function init(){
-  buildFields();
-  updateDisplay();
-  preventDoubleTapZoom();
-}
-
 function preventDoubleTapZoom(){
   let lastTouchEnd = 0;
   document.addEventListener('touchend', function(e){
@@ -546,6 +520,14 @@ function preventDoubleTapZoom(){
     lastTouchEnd = now;
   }, false);
 }
+
+function init(){
+  buildFields();
+  updateDisplay();
+  preventDoubleTapZoom();
+}
+
+document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>
