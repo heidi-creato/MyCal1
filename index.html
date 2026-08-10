@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>حاسبة التصفية</title>
 
-<!-- أيقونات للشاشة الرئيسية (آلة حاسبة) -->
+<!-- أيقونات للشاشة الرئيسية -->
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%235b8cff'/%3E%3Crect x='16' y='16' width='32' height='24' rx='4' fill='%23ffffff'/%3E%3Ctext x='20' y='33' font-family='Arial' font-size='12' fill='%235b8cff' font-weight='bold'%3E123%3C/text%3E%3Crect x='16' y='44' width='32' height='8' rx='4' fill='%23ffffff'/%3E%3Ctext x='20' y='52' font-family='Arial' font-size='8' fill='%235b8cff' font-weight='bold'%3E%2B-%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%235b8cff'/%3E%3Crect x='16' y='16' width='32' height='24' rx='4' fill='%23ffffff'/%3E%3Ctext x='20' y='33' font-family='Arial' font-size='12' fill='%235b8cff' font-weight='bold'%3E123%3C/text%3E%3Crect x='16' y='44' width='32' height='8' rx='4' fill='%23ffffff'/%3E%3Ctext x='20' y='52' font-family='Arial' font-size='8' fill='%235b8cff' font-weight='bold'%3E%2B-%3C/text%3E%3C/svg%3E">
 
@@ -160,7 +160,7 @@
 
   /* ---------- actions ---------- */
   .actions{
-    display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
+    display:grid; grid-template-columns:repeat(5,1fr); gap:8px;
     margin-top:13px;
   }
   .btn{
@@ -175,6 +175,8 @@
   .btn svg{ width:17px; height:17px; }
   .btn:active{ transform:scale(.94); }
   .btn-history.active{ background:var(--accent-soft); color:var(--accent); border-color:transparent; }
+  .btn-add{ background:var(--accent-soft); color:var(--accent); border-color:transparent; }
+  .btn-add:active{ background:var(--accent); color:#fff; }
 
   /* ---------- history ---------- */
   .history-panel{
@@ -251,6 +253,10 @@
   </div>
 
   <div class="actions">
+    <button class="btn btn-add" type="button" onclick="addFromActiveField()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      إضافة
+    </button>
     <button class="btn btn-undo" type="button" onclick="undoLastAction()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-1"/></svg>
       تراجع
@@ -296,7 +302,6 @@ let lastFinal = 0;
 
 function buildFields(){
   const list = document.getElementById('fieldList');
-  // أزلنا زر + نهائياً
   list.innerHTML = FIELDS.map(f => `
     <div class="field">
       <label class="field-label" for="${f}-input">${FIELD_KEYS[f]}</label>
@@ -307,39 +312,18 @@ function buildFields(){
 
   FIELDS.forEach(field => {
     const input = document.getElementById(`${field}-input`);
-
-    // الإضافة بالضغط على Enter (يبقي لوحة المفاتيح مفتوحة)
+    // دعم Enter من لوحة المفاتيح الخارجية
     input.addEventListener('keypress', e => {
       if (e.key === 'Enter'){
         e.preventDefault();
         const val = input.value.trim();
         if (val !== '') {
-          addNumber(field, val, true, true); // مسح وإعادة تركيز
+          addNumber(field, val, true);
         } else {
           showMessage('info', 'الرجاء إدخال قيمة');
         }
       }
     });
-
-    // الإضافة عند فقدان التركيز (Done/تم) مع إعادة تركيز ذكية
-    input.addEventListener('blur', function(e) {
-      const val = this.value.trim();
-      if (val !== '') {
-        const fieldName = field;
-        // نضيف القيمة ونمسح الحقل لكن لا نعيد التركيز فوراً
-        addNumber(fieldName, val, true, false);
-        // ننتظر قليلاً لنتأكد أن المستخدم لم ينقر على زر (تراجع، سجل، الخ)
-        setTimeout(() => {
-          const active = document.activeElement;
-          // إذا كان العنصر النشط ليس زراً وليس حقل إدخال آخر، نعيد التركيز لفتح الكيبورد
-          if (active && active.tagName !== 'BUTTON' && active.tagName !== 'INPUT') {
-            const inputEl = document.getElementById(`${fieldName}-input`);
-            if (inputEl) inputEl.focus();
-          }
-        }, 150);
-      }
-    });
-
     // فلترة الأرقام
     input.addEventListener('input', e => {
       let value = e.target.value;
@@ -349,13 +333,34 @@ function buildFields(){
       if (parts.length > 2) value = parts[0] + '.' + parts.slice(1).join('');
       e.target.value = value;
     });
-
-    // تحديد النص عند التركيز لتسهيل المسح
+    // تحديد النص عند التركيز
     input.addEventListener('focus', () => { setTimeout(() => input.select(), 100); });
   });
 }
 
-function addNumber(fieldName, value, clearInput = true, refocus = false){
+// دالة الإضافة من الحقل النشط (يستدعيها زر "إضافة")
+function addFromActiveField(){
+  const active = document.activeElement;
+  if (!active || !active.classList.contains('field-input')){
+    showMessage('info', 'الرجاء التركيز في أحد الحقول أولاً');
+    return;
+  }
+  const fieldName = active.id.replace('-input', '');
+  if (!FIELDS.includes(fieldName)) {
+    showMessage('info', 'حقل غير معروف');
+    return;
+  }
+  const val = active.value.trim();
+  if (val === '') {
+    showMessage('info', 'الرجاء إدخال قيمة');
+    active.focus();
+    return;
+  }
+  addNumber(fieldName, val, true);
+  // التركيز يبقى على الحقل (addNumber لا تمسح التركيز)
+}
+
+function addNumber(fieldName, value, clearInput = true){
   try{
     const numValue = parseFloat(value);
     if (isNaN(numValue)) throw new Error('الرجاء إدخال رقم صحيح');
@@ -377,9 +382,8 @@ function addNumber(fieldName, value, clearInput = true, refocus = false){
       const input = document.getElementById(`${fieldName}-input`);
       if (input) {
         input.value = '';
-        if (refocus) {
-          setTimeout(() => { input.focus(); }, 50);
-        }
+        // نعيد التركيز ليبقى الكيبورد مفتوحاً (بسبب تفاعل المستخدم مع زر "إضافة")
+        input.focus();
       }
     }
 
