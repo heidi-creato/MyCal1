@@ -4,11 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>حاسبة التصفية</title>
-
-<!-- أيقونات -->
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%235b8cff'/%3E%3Crect x='16' y='16' width='32' height='24' rx='4' fill='%23ffffff'/%3E%3Ctext x='20' y='33' font-family='Arial' font-size='12' fill='%235b8cff' font-weight='bold'%3E123%3C/text%3E%3Crect x='16' y='44' width='32' height='8' rx='4' fill='%23ffffff'/%3E%3Ctext x='20' y='52' font-family='Arial' font-size='8' fill='%235b8cff' font-weight='bold'%3E%2B-%3C/text%3E%3C/svg%3E">
-<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%235b8cff'/%3E%3Crect x='16' y='16' width='32' height='24' rx='4' fill='%23ffffff'/%3E%3Ctext x='20' y='33' font-family='Arial' font-size='12' fill='%235b8cff' font-weight='bold'%3E123%3C/text%3E%3Crect x='16' y='44' width='32' height='8' rx='4' fill='%23ffffff'/%3E%3Ctext x='20' y='52' font-family='Arial' font-size='8' fill='%235b8cff' font-weight='bold'%3E%2B-%3C/text%3E%3C/svg%3E">
-
 <style>
   :root{
     --bg-1:#0a0c11;
@@ -63,7 +58,7 @@
   .brand h1{ font-size:16px; font-weight:800; letter-spacing:.2px; text-align:left; }
   .brand small{ display:block; font-size:10.5px; color:var(--muted); font-weight:600; margin-top:1px; text-transform:uppercase; letter-spacing:.4px; text-align:left; }
 
-  /* ---------- hero ---------- */
+  /* ---------- hero (final result) ---------- */
   .hero{
     position:relative;
     border-radius:20px;
@@ -135,30 +130,28 @@
   }
   .field:last-child{ border-bottom:none; }
   .field-label{
-    width:44px; flex-shrink:0;
+    width:38px; flex-shrink:0;
     font-family:var(--font-mono); font-size:11.5px; font-weight:800;
     letter-spacing:.6px; text-transform:uppercase; color:var(--muted);
   }
-  .field-editor{
+  .field-input{
     flex:1; min-width:0;
     background:transparent; border:none; border-bottom:1.5px solid var(--line);
-    padding:7px 2px;
-    font-family:var(--font-mono); font-size:16px; font-weight:600;
+    padding:7px 2px; font-family:var(--font-mono); font-size:16px; font-weight:600;
     color:var(--text); text-align:left; direction:ltr;
-    outline:none;
+    -webkit-appearance:none; appearance:none;
     transition:border-color .2s ease;
-    min-height:32px;
-    line-height:1.4;
   }
-  .field-editor:focus{ border-bottom-color:var(--accent); }
-  .field-editor:empty::before{
-    content:attr(data-placeholder);
-    color:var(--muted-2);
-    font-weight:500;
-  }
+  .field-input::placeholder{ color:var(--muted-2); font-weight:500; }
+  .field-input:focus{ outline:none; border-bottom-color:var(--accent); }
+  /* remove number spin buttons */
+  .field-input::-webkit-outer-spin-button,
+  .field-input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+  .field-input[type=number]{ -moz-appearance:textfield; }
+
   .field-total{
     font-family:var(--font-mono); font-size:11.5px; font-weight:700;
-    color:var(--muted-2); min-width:50px; text-align:left; direction:ltr;
+    color:var(--muted-2); min-width:46px; text-align:left; direction:ltr;
     flex-shrink:0;
   }
 
@@ -219,7 +212,7 @@
 
   @media(max-width:360px){
     .hero-value{ font-size:36px; }
-    .field-label{ width:38px; font-size:11px; }
+    .field-label{ width:44px; font-size:11.5px; }
   }
 </style>
 </head>
@@ -285,6 +278,13 @@
 <script>
 'use strict';
 
+/*
+  الحقول (Net / Tip / Bar / Tnk / Knt / Other) أبقيت كما هي بالاسم لأنها مصطلحات خاصة بالتطبيق.
+  المعادلات الرياضية:
+    Me    = Net*0.4 + Tip - Knt                 (تُحسب داخلياً فقط ولا تُعرض بالواجهة)
+    Final = Bar - (Tnk + Other) - Me + (Pv / 2) (كل إدخال بحقل Pv يُقسم على 2 ويُضاف للتصفية النهائية)
+*/
+
 const FIELDS = ['net','tip','bar','tnk','knt','other','pv'];
 const FIELD_KEYS = { net:'Net', tip:'Tip', bar:'Bar', tnk:'Tnk', knt:'Knt', other:'Other', pv:'Pv' };
 
@@ -302,74 +302,63 @@ function buildFields(){
   const list = document.getElementById('fieldList');
   list.innerHTML = FIELDS.map(f => `
     <div class="field">
-      <label class="field-label" for="${f}-editor">${FIELD_KEYS[f]}</label>
-      <div class="field-editor" id="${f}-editor" contenteditable="true" role="textbox" inputmode="decimal" data-placeholder="0.00"></div>
+      <label class="field-label" for="${f}-input">${FIELD_KEYS[f]}</label>
+      <input class="field-input" type="text" id="${f}-input" inputmode="decimal" pattern="[0-9]*\\.?[0-9]*" lang="en" dir="ltr" placeholder="0.00">
       <div class="field-total" id="${f}-total">0.00</div>
     </div>
   `).join('');
-
-  FIELDS.forEach(field => {
-    const editor = document.getElementById(`${field}-editor`);
-
-    // منع إدخال أحرف غير رقمية
-    editor.addEventListener('input', function(e) {
-      let text = this.innerText;
-      // استبدال الفواصل بنقاط
-      text = text.replace(/,/g, '.');
-      // حذف كل شيء ما عدا الأرقام والنقطة
-      text = text.replace(/[^0-9.]/g, '');
-      // التأكد من وجود نقطة واحدة فقط
-      const parts = text.split('.');
-      if (parts.length > 2) {
-        text = parts[0] + '.' + parts.slice(1).join('');
-      }
-      this.innerText = text;
-      // وضع المؤشر في النهاية
-      const range = document.createRange();
-      const sel = window.getSelection();
-      if (this.childNodes.length > 0) {
-        range.setStartAfter(this.childNodes[this.childNodes.length - 1]);
-        range.collapse(false);
-      } else {
-        range.selectNodeContents(this);
-      }
-      sel.removeAllRanges();
-      sel.addRange(range);
-    });
-
-    // إضافة القيمة عند الضغط على Enter (Return) في لوحة المفاتيح الرقمية
-    editor.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        const val = this.innerText.trim();
-        if (val !== '') {
-          addNumber(field, val, true);
-        } else {
-          showMessage('info', 'الرجاء إدخال قيمة');
-        }
-      }
-    });
-
-    // عند فقدان التركيز (blur) – يحدث عند الضغط على "Done"
-    editor.addEventListener('blur', function() {
-      const val = this.innerText.trim();
-      if (val !== '') {
-        addNumber(field, val, true);
-        // محاولة إعادة التركيز بعد تأخير (قد لا يعمل على iOS)
-        setTimeout(() => {
-          this.focus();
-        }, 300);
-      }
-    });
-
-    // التركيز التلقائي على أول حقل
-    if (field === FIELDS[0]) {
-      editor.focus();
-    }
-  });
 }
 
-function addNumber(fieldName, value, clearInput = true){
+function init(){
+  buildFields();
+  setupEventListeners();
+  updateDisplay();
+  preventDoubleTapZoom();
+}
+
+function preventDoubleTapZoom(){
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', function(e){
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) e.preventDefault();
+    lastTouchEnd = now;
+  }, false);
+}
+
+function setupEventListeners(){
+  FIELDS.forEach(field => {
+    const input = document.getElementById(`${field}-input`);
+
+    input.addEventListener('keypress', e => {
+      if (e.key === 'Enter'){
+        e.preventDefault();
+        commitField(field, input);
+        input.blur();
+      }
+    });
+    input.addEventListener('blur', () => commitField(field, input));
+    input.addEventListener('focus', () => { setTimeout(() => input.select(), 100); });
+    input.addEventListener('input', e => {
+      let value = e.target.value;
+      value = value.replace(',', '.');
+      value = value.replace(/[^0-9.]/g, '');
+      const parts = value.split('.');
+      if (parts.length > 2) value = parts[0] + '.' + parts.slice(1).join('');
+      e.target.value = value;
+    });
+  });
+
+  document.getElementById('copyBtn').addEventListener('click', copyResult);
+}
+
+function commitField(field, input){
+  if (input.value){
+    addNumber(field, input.value);
+    input.value = '';
+  }
+}
+
+function addNumber(fieldName, value){
   try{
     const numValue = parseFloat(value);
     if (isNaN(numValue)) throw new Error('الرجاء إدخال رقم صحيح');
@@ -386,14 +375,6 @@ function addNumber(fieldName, value, clearInput = true){
 
     updateDisplay();
     hideMessage('error');
-
-    if (clearInput) {
-      const editor = document.getElementById(`${fieldName}-editor`);
-      if (editor) {
-        editor.innerText = '';
-      }
-    }
-
     if ('vibrate' in navigator) navigator.vibrate(40);
   }catch(err){
     showMessage('error', err.message);
@@ -476,7 +457,7 @@ function undoLastAction(){
 
 function resetAll(){
   Object.keys(state.totals).forEach(f => state.totals[f] = 0);
-  document.querySelectorAll('.field-editor').forEach(el => el.innerText = '');
+  document.querySelectorAll('.field-input').forEach(i => i.value = '');
   clearHistory();
   updateDisplay();
   if ('vibrate' in navigator) navigator.vibrate([50,50,50]);
@@ -521,21 +502,6 @@ function showMessage(type, msg){
 function hideMessage(type){
   const el = document.getElementById(`${type}Message`);
   el.classList.remove('show');
-}
-
-function preventDoubleTapZoom(){
-  let lastTouchEnd = 0;
-  document.addEventListener('touchend', function(e){
-    const now = Date.now();
-    if (now - lastTouchEnd <= 300) e.preventDefault();
-    lastTouchEnd = now;
-  }, false);
-}
-
-function init(){
-  buildFields();
-  updateDisplay();
-  preventDoubleTapZoom();
 }
 
 document.addEventListener('DOMContentLoaded', init);
