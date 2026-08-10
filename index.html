@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>حاسبة التصفية</title>
 
-<!-- أيقونات للشاشة الرئيسية -->
+<!-- أيقونات -->
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%235b8cff'/%3E%3Crect x='16' y='16' width='32' height='24' rx='4' fill='%23ffffff'/%3E%3Ctext x='20' y='33' font-family='Arial' font-size='12' fill='%235b8cff' font-weight='bold'%3E123%3C/text%3E%3Crect x='16' y='44' width='32' height='8' rx='4' fill='%23ffffff'/%3E%3Ctext x='20' y='52' font-family='Arial' font-size='8' fill='%235b8cff' font-weight='bold'%3E%2B-%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%235b8cff'/%3E%3Crect x='16' y='16' width='32' height='24' rx='4' fill='%23ffffff'/%3E%3Ctext x='20' y='33' font-family='Arial' font-size='12' fill='%235b8cff' font-weight='bold'%3E123%3C/text%3E%3Crect x='16' y='44' width='32' height='8' rx='4' fill='%23ffffff'/%3E%3Ctext x='20' y='52' font-family='Arial' font-size='8' fill='%235b8cff' font-weight='bold'%3E%2B-%3C/text%3E%3C/svg%3E">
 
@@ -139,19 +139,23 @@
     font-family:var(--font-mono); font-size:11.5px; font-weight:800;
     letter-spacing:.6px; text-transform:uppercase; color:var(--muted);
   }
-  .field-input{
+  .field-editor{
     flex:1; min-width:0;
     background:transparent; border:none; border-bottom:1.5px solid var(--line);
-    padding:7px 2px; font-family:var(--font-mono); font-size:16px; font-weight:600;
+    padding:7px 2px;
+    font-family:var(--font-mono); font-size:16px; font-weight:600;
     color:var(--text); text-align:left; direction:ltr;
-    -webkit-appearance:none; appearance:none;
+    outline:none;
     transition:border-color .2s ease;
+    min-height:32px;
+    line-height:1.4;
   }
-  .field-input::placeholder{ color:var(--muted-2); font-weight:500; }
-  .field-input:focus{ outline:none; border-bottom-color:var(--accent); }
-  .field-input::-webkit-outer-spin-button,
-  .field-input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
-  .field-input[type=number]{ -moz-appearance:textfield; }
+  .field-editor:focus{ border-bottom-color:var(--accent); }
+  .field-editor:empty::before{
+    content:attr(data-placeholder);
+    color:var(--muted-2);
+    font-weight:500;
+  }
   .field-total{
     font-family:var(--font-mono); font-size:11.5px; font-weight:700;
     color:var(--muted-2); min-width:50px; text-align:left; direction:ltr;
@@ -160,7 +164,7 @@
 
   /* ---------- actions ---------- */
   .actions{
-    display:grid; grid-template-columns:repeat(5,1fr); gap:8px;
+    display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
     margin-top:13px;
   }
   .btn{
@@ -175,8 +179,6 @@
   .btn svg{ width:17px; height:17px; }
   .btn:active{ transform:scale(.94); }
   .btn-history.active{ background:var(--accent-soft); color:var(--accent); border-color:transparent; }
-  .btn-add{ background:var(--accent-soft); color:var(--accent); border-color:transparent; }
-  .btn-add:active{ background:var(--accent); color:#fff; }
 
   /* ---------- history ---------- */
   .history-panel{
@@ -253,10 +255,6 @@
   </div>
 
   <div class="actions">
-    <button class="btn btn-add" type="button" onclick="addFromActiveField()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-      إضافة
-    </button>
     <button class="btn btn-undo" type="button" onclick="undoLastAction()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-1"/></svg>
       تراجع
@@ -304,19 +302,46 @@ function buildFields(){
   const list = document.getElementById('fieldList');
   list.innerHTML = FIELDS.map(f => `
     <div class="field">
-      <label class="field-label" for="${f}-input">${FIELD_KEYS[f]}</label>
-      <input class="field-input" type="text" id="${f}-input" inputmode="decimal" pattern="[0-9]*\\.?[0-9]*" lang="en" dir="ltr" placeholder="0.00" autocomplete="off">
+      <label class="field-label" for="${f}-editor">${FIELD_KEYS[f]}</label>
+      <div class="field-editor" id="${f}-editor" contenteditable="true" role="textbox" inputmode="decimal" data-placeholder="0.00"></div>
       <div class="field-total" id="${f}-total">0.00</div>
     </div>
   `).join('');
 
   FIELDS.forEach(field => {
-    const input = document.getElementById(`${field}-input`);
-    // دعم Enter من لوحة المفاتيح الخارجية
-    input.addEventListener('keypress', e => {
-      if (e.key === 'Enter'){
+    const editor = document.getElementById(`${field}-editor`);
+
+    // منع إدخال أحرف غير رقمية
+    editor.addEventListener('input', function(e) {
+      let text = this.innerText;
+      // استبدال الفواصل بنقاط
+      text = text.replace(/,/g, '.');
+      // حذف كل شيء ما عدا الأرقام والنقطة
+      text = text.replace(/[^0-9.]/g, '');
+      // التأكد من وجود نقطة واحدة فقط
+      const parts = text.split('.');
+      if (parts.length > 2) {
+        text = parts[0] + '.' + parts.slice(1).join('');
+      }
+      this.innerText = text;
+      // وضع المؤشر في النهاية
+      const range = document.createRange();
+      const sel = window.getSelection();
+      if (this.childNodes.length > 0) {
+        range.setStartAfter(this.childNodes[this.childNodes.length - 1]);
+        range.collapse(false);
+      } else {
+        range.selectNodeContents(this);
+      }
+      sel.removeAllRanges();
+      sel.addRange(range);
+    });
+
+    // إضافة القيمة عند الضغط على Enter (Return) في لوحة المفاتيح الرقمية
+    editor.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
         e.preventDefault();
-        const val = input.value.trim();
+        const val = this.innerText.trim();
         if (val !== '') {
           addNumber(field, val, true);
         } else {
@@ -324,40 +349,24 @@ function buildFields(){
         }
       }
     });
-    // فلترة الأرقام
-    input.addEventListener('input', e => {
-      let value = e.target.value;
-      value = value.replace(',', '.');
-      value = value.replace(/[^0-9.]/g, '');
-      const parts = value.split('.');
-      if (parts.length > 2) value = parts[0] + '.' + parts.slice(1).join('');
-      e.target.value = value;
-    });
-    // تحديد النص عند التركيز
-    input.addEventListener('focus', () => { setTimeout(() => input.select(), 100); });
-  });
-}
 
-// دالة الإضافة من الحقل النشط (يستدعيها زر "إضافة")
-function addFromActiveField(){
-  const active = document.activeElement;
-  if (!active || !active.classList.contains('field-input')){
-    showMessage('info', 'الرجاء التركيز في أحد الحقول أولاً');
-    return;
-  }
-  const fieldName = active.id.replace('-input', '');
-  if (!FIELDS.includes(fieldName)) {
-    showMessage('info', 'حقل غير معروف');
-    return;
-  }
-  const val = active.value.trim();
-  if (val === '') {
-    showMessage('info', 'الرجاء إدخال قيمة');
-    active.focus();
-    return;
-  }
-  addNumber(fieldName, val, true);
-  // التركيز يبقى على الحقل (addNumber لا تمسح التركيز)
+    // عند فقدان التركيز (blur) – يحدث عند الضغط على "Done"
+    editor.addEventListener('blur', function() {
+      const val = this.innerText.trim();
+      if (val !== '') {
+        addNumber(field, val, true);
+        // محاولة إعادة التركيز بعد تأخير (قد لا يعمل على iOS)
+        setTimeout(() => {
+          this.focus();
+        }, 300);
+      }
+    });
+
+    // التركيز التلقائي على أول حقل
+    if (field === FIELDS[0]) {
+      editor.focus();
+    }
+  });
 }
 
 function addNumber(fieldName, value, clearInput = true){
@@ -379,11 +388,9 @@ function addNumber(fieldName, value, clearInput = true){
     hideMessage('error');
 
     if (clearInput) {
-      const input = document.getElementById(`${fieldName}-input`);
-      if (input) {
-        input.value = '';
-        // نعيد التركيز ليبقى الكيبورد مفتوحاً (بسبب تفاعل المستخدم مع زر "إضافة")
-        input.focus();
+      const editor = document.getElementById(`${fieldName}-editor`);
+      if (editor) {
+        editor.innerText = '';
       }
     }
 
@@ -469,7 +476,7 @@ function undoLastAction(){
 
 function resetAll(){
   Object.keys(state.totals).forEach(f => state.totals[f] = 0);
-  document.querySelectorAll('.field-input').forEach(i => i.value = '');
+  document.querySelectorAll('.field-editor').forEach(el => el.innerText = '');
   clearHistory();
   updateDisplay();
   if ('vibrate' in navigator) navigator.vibrate([50,50,50]);
