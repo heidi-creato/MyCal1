@@ -48,13 +48,13 @@
   }
   .brand{ display:flex; direction:ltr; align-items:center; gap:10px; text-align:left; }
   .brand-mark{
-    width:30px;height:30px;border-radius:9px;
+    width:34px;height:34px;border-radius:10px;
     background:linear-gradient(135deg, var(--accent), #7ea2ff);
     display:flex;align-items:center;justify-content:center;
     box-shadow:0 6px 16px -6px rgba(91,140,255,.6);
     flex-shrink:0;
   }
-  .brand-mark svg{ width:16px; height:16px; stroke:#fff; }
+  .brand-mark svg{ width:19px; height:19px; stroke:#fff; stroke-width:2.4; }
   .brand h1{ font-size:16px; font-weight:800; letter-spacing:.2px; text-align:left; }
   .brand small{ display:block; font-size:10.5px; color:var(--muted); font-weight:600; margin-top:1px; text-transform:uppercase; letter-spacing:.4px; text-align:left; }
 
@@ -95,13 +95,13 @@
     font-size:12px; font-weight:600; color:var(--muted); direction:ltr;
   }
   .copy-chip{
-    position:relative; margin-top:11px; padding:8px 18px; border-radius:100px;
+    position:relative; margin-top:11px; padding:9px 20px; border-radius:100px;
     border:1px solid var(--surface-border); background:rgba(255,255,255,.04);
-    color:var(--muted); font-size:11px; font-weight:700; cursor:pointer;
-    display:inline-flex; align-items:center; gap:6px;
+    color:var(--muted); font-size:12px; font-weight:700; cursor:pointer;
+    display:inline-flex; align-items:center; gap:7px;
   }
   .copy-chip:active{ transform:scale(.96); }
-  .copy-chip svg{ width:13px; height:13px; }
+  .copy-chip svg{ width:16px; height:16px; stroke-width:2.3; }
 
   /* ---------- panel ---------- */
   .panel{
@@ -130,9 +130,9 @@
   }
   .field:last-child{ border-bottom:none; }
   .field-label{
-    width:38px; flex-shrink:0;
-    font-family:var(--font-mono); font-size:11.5px; font-weight:800;
-    letter-spacing:.6px; text-transform:uppercase; color:var(--muted);
+    width:46px; flex-shrink:0;
+    font-family:var(--font-mono); font-size:13px; font-weight:800;
+    letter-spacing:.6px; text-transform:uppercase; color:var(--text);
   }
   .field-input{
     flex:1; min-width:0;
@@ -150,10 +150,11 @@
   .field-input[type=number]{ -moz-appearance:textfield; }
 
   .field-total{
-    font-family:var(--font-mono); font-size:11.5px; font-weight:700;
-    color:var(--muted-2); min-width:46px; text-align:left; direction:ltr;
-    flex-shrink:0;
+    font-family:var(--font-mono); font-size:14px; font-weight:800;
+    color:var(--muted-2); min-width:54px; text-align:left; direction:ltr;
+    flex-shrink:0; transition:color .2s ease;
   }
+  .field-total.filled{ color:var(--accent); }
 
   /* ---------- actions ---------- */
   .actions{
@@ -161,15 +162,15 @@
     margin-top:13px;
   }
   .btn{
-    padding:11px 6px; border:1px solid var(--surface-border); border-radius:14px;
+    padding:12px 6px; border:1px solid var(--surface-border); border-radius:14px;
     background:var(--surface); color:var(--muted);
-    font-size:10.5px; font-weight:700; letter-spacing:.2px;
+    font-size:11px; font-weight:700; letter-spacing:.2px;
     cursor:pointer; touch-action:manipulation;
     -webkit-user-select:none; user-select:none;
-    display:flex; flex-direction:column; align-items:center; gap:4px;
+    display:flex; flex-direction:column; align-items:center; gap:6px;
     transition:transform .12s ease, background .15s ease, color .15s ease;
   }
-  .btn svg{ width:17px; height:17px; }
+  .btn svg{ width:21px; height:21px; stroke-width:2.1; }
   .btn:active{ transform:scale(.94); }
   .btn-history.active{ background:var(--accent-soft); color:var(--accent); border-color:transparent; }
 
@@ -214,10 +215,79 @@
     .hero-value{ font-size:36px; }
     .field-label{ width:44px; font-size:11.5px; }
   }
+
+  /* ---------- lock screen ---------- */
+  #lockScreen{
+    position:fixed; inset:0; z-index:999;
+    display:flex; align-items:center; justify-content:center;
+    padding:20px;
+    background:
+      radial-gradient(900px 500px at 12% -8%, rgba(91,140,255,.16) 0%, transparent 55%),
+      radial-gradient(800px 480px at 105% 8%, rgba(47,214,149,.10) 0%, transparent 55%),
+      linear-gradient(180deg, var(--bg-2), var(--bg-1) 60%);
+  }
+  #lockScreen.hidden{ display:none; }
+  .lock-card{
+    width:100%; max-width:360px; border-radius:20px;
+    background:var(--surface); border:1px solid var(--surface-border);
+    box-shadow:0 22px 50px -26px rgba(0,0,0,.7);
+    padding:26px 22px; text-align:center;
+  }
+  .lock-mark{
+    width:52px;height:52px;border-radius:14px; margin:0 auto 16px;
+    background:linear-gradient(135deg, var(--accent), #7ea2ff);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 6px 16px -6px rgba(91,140,255,.6);
+  }
+  .lock-mark svg{ width:24px; height:24px; stroke:#fff; stroke-width:2.2; }
+  .lock-title{ font-size:16px; font-weight:800; margin-bottom:4px; }
+  .lock-sub{ font-size:12.5px; color:var(--muted); margin-bottom:20px; }
+  .lock-input{
+    width:100%; background:rgba(255,255,255,.05); border:1.5px solid var(--surface-border);
+    border-radius:14px; padding:14px 12px; text-align:center;
+    font-family:var(--font-mono); font-size:19px; font-weight:800; letter-spacing:4px;
+    color:var(--text); direction:ltr; text-transform:uppercase;
+    -webkit-appearance:none; appearance:none; transition:border-color .2s ease;
+  }
+  .lock-input::placeholder{ color:var(--muted-2); letter-spacing:1px; font-size:13px; font-weight:600; text-transform:none;}
+  .lock-input:focus{ outline:none; border-color:var(--accent); }
+  .lock-btn{
+    width:100%; margin-top:14px; padding:13px; border:none; border-radius:14px;
+    background:linear-gradient(135deg, var(--accent), #7ea2ff); color:#fff;
+    font-size:14px; font-weight:800; cursor:pointer; touch-action:manipulation;
+    transition:transform .12s ease, opacity .15s ease;
+  }
+  .lock-btn:active{ transform:scale(.97); }
+  .lock-btn:disabled{ opacity:.55; }
+  .lock-msg{
+    margin-top:14px; font-size:12.5px; font-weight:700; min-height:16px;
+  }
+  .lock-msg.error{ color:#ff8791; }
+  .lock-msg.info{ color:#a9c2ff; }
+  .lock-spinner{
+    display:inline-block; width:15px; height:15px; border-radius:50%;
+    border:2px solid rgba(255,255,255,.4); border-top-color:#fff;
+    animation:spin .7s linear infinite; vertical-align:-3px; margin-left:6px;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
 </style>
 </head>
 <body>
-<div class="app">
+
+<div id="lockScreen">
+  <div class="lock-card">
+    <div class="lock-mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+    </div>
+    <div class="lock-title">دخول محمي</div>
+    <div class="lock-sub">أدخل كود التفعيل الخاص بك للمتابعة</div>
+    <input class="lock-input" id="codeInput" type="text" inputmode="text" maxlength="12" placeholder="XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false">
+    <button class="lock-btn" id="unlockBtn" type="button">دخول</button>
+    <div class="lock-msg" id="lockMsg"></div>
+  </div>
+</div>
+
+<div class="app" id="appRoot" style="display:none;">
 
   <div class="brandbar">
     <div class="brand">
@@ -274,6 +344,106 @@
   </div>
 
 </div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyC9C2eLF4j-TXb1ndnDaRtXPN24S56eIi0",
+    authDomain: "mycal-1b543.firebaseapp.com",
+    projectId: "mycal-1b543",
+    storageBucket: "mycal-1b543.firebasestorage.app",
+    messagingSenderId: "118243337895",
+    appId: "1:118243337895:web:5c9259c9be063533605d82"
+  };
+
+  const fbApp = initializeApp(firebaseConfig);
+  const db = getFirestore(fbApp);
+
+  const STORAGE_KEY = 'mycal_access';
+
+  const lockScreen = document.getElementById('lockScreen');
+  const appRoot = document.getElementById('appRoot');
+  const codeInput = document.getElementById('codeInput');
+  const unlockBtn = document.getElementById('unlockBtn');
+  const lockMsg = document.getElementById('lockMsg');
+
+  function showLockMsg(type, text){
+    lockMsg.className = 'lock-msg ' + type;
+    lockMsg.textContent = text;
+  }
+
+  function grantAccess(code, expiresAtMillis){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ code, expiresAt: expiresAtMillis }));
+    lockScreen.classList.add('hidden');
+    appRoot.style.display = '';
+  }
+
+  function clearAccess(){
+    localStorage.removeItem(STORAGE_KEY);
+  }
+
+  async function verifyCode(code){
+    const ref = doc(db, 'codes', code);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return { ok:false, reason:'invalid' };
+    const data = snap.data();
+    if (data.active === false) return { ok:false, reason:'revoked' };
+    const expiresAtMillis = data.expiresAt && data.expiresAt.toMillis ? data.expiresAt.toMillis() : null;
+    if (expiresAtMillis && Date.now() > expiresAtMillis) return { ok:false, reason:'expired' };
+    return { ok:true, expiresAtMillis };
+  }
+
+  async function attemptUnlock(){
+    const raw = codeInput.value.trim().toUpperCase();
+    if (!raw){ showLockMsg('error','الرجاء إدخال الكود'); return; }
+    unlockBtn.disabled = true;
+    showLockMsg('info', 'جارٍ التحقق...');
+    try{
+      const result = await verifyCode(raw);
+      if (result.ok){
+        showLockMsg('info', 'تم التحقق بنجاح');
+        grantAccess(raw, result.expiresAtMillis);
+      } else {
+        const messages = { invalid:'الكود غير صحيح', revoked:'تم إلغاء هذا الكود', expired:'انتهت صلاحية الكود' };
+        showLockMsg('error', messages[result.reason] || 'تعذر التحقق من الكود');
+      }
+    }catch(err){
+      showLockMsg('error', 'تعذر الاتصال، تحقق من الإنترنت');
+    }finally{
+      unlockBtn.disabled = false;
+    }
+  }
+
+  unlockBtn.addEventListener('click', attemptUnlock);
+  codeInput.addEventListener('keypress', e => { if (e.key === 'Enter') attemptUnlock(); });
+  codeInput.addEventListener('input', () => { codeInput.value = codeInput.value.toUpperCase(); });
+
+  async function checkAccess(){
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw){
+      try{
+        const cached = JSON.parse(raw);
+        if (cached.expiresAt && Date.now() < cached.expiresAt){
+          lockScreen.classList.add('hidden');
+          appRoot.style.display = '';
+          verifyCode(cached.code).then(result => {
+            if (!result.ok){
+              clearAccess();
+              location.reload();
+            }
+          }).catch(() => { /* لا يوجد إنترنت: يبقى الوصول المخزّن سارياً حتى الانتهاء */ });
+          return;
+        } else {
+          clearAccess();
+        }
+      }catch(e){ clearAccess(); }
+    }
+  }
+
+  checkAccess();
+</script>
 
 <script>
 'use strict';
@@ -403,7 +573,9 @@ function calculate(){
 function updateDisplay(){
   FIELDS.forEach(f => {
     const key = FIELD_KEYS[f];
-    document.getElementById(`${f}-total`).textContent = state.totals[key].toFixed(2);
+    const totalEl = document.getElementById(`${f}-total`);
+    totalEl.textContent = state.totals[key].toFixed(2);
+    totalEl.classList.toggle('filled', state.totals[key] !== 0);
   });
   calculate();
   updateHistoryDisplay();
