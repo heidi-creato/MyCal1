@@ -2,6 +2,9 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>MyCal 1.5 — Your Pro Calculator</title>
 <meta name="description" content="Your Pro Calculator">
@@ -280,22 +283,23 @@
   }
   @keyframes spin{ to{ transform:rotate(360deg); } }
 
-  /* ---------- expire badge & details ---------- */
-  .expire-badge{
+  /* ---------- account button & panel ---------- */
+  .account-btn{
     position:fixed; top:calc(12px + var(--safe-t, 0px)); right:12px; z-index:60;
-    display:none; align-items:center; gap:6px;
+    display:none; align-items:center; justify-content:center;
+    width:36px; height:36px; border-radius:50%;
     background:var(--surface); border:1px solid var(--surface-border);
-    border-radius:100px; padding:7px 12px 7px 10px;
-    font-size:10.5px; font-weight:800; color:var(--muted);
-    cursor:pointer; direction:ltr; box-shadow:0 8px 20px -12px rgba(0,0,0,.6);
+    color:var(--muted); cursor:pointer; box-shadow:0 8px 20px -12px rgba(0,0,0,.6);
     -webkit-user-select:none; user-select:none;
   }
-  .expire-badge.visible{ display:inline-flex; }
-  .expire-badge .dot{ width:6px;height:6px;border-radius:50%; background:var(--pos); flex-shrink:0; }
-  .expire-badge.warn .dot{ background:#ffb84d; }
-  .expire-badge.danger .dot{ background:var(--neg); }
-  .expire-badge .label{ color:var(--muted-2); font-weight:700; text-transform:uppercase; letter-spacing:.3px; font-size:9.5px; }
-  .expire-badge .value{ color:var(--text); font-family:var(--font-mono); }
+  .account-btn.visible{ display:flex; }
+  .account-btn svg{ width:18px; height:18px; }
+  .account-btn .status-dot{
+    position:absolute; bottom:-1px; right:-1px; width:10px; height:10px; border-radius:50%;
+    background:var(--pos); border:2px solid var(--bg-1);
+  }
+  .account-btn.warn .status-dot{ background:#ffb84d; }
+  .account-btn.danger .status-dot{ background:var(--neg); }
 
   .details-overlay{
     position:fixed; inset:0; z-index:998; display:none;
@@ -322,6 +326,41 @@
     cursor:pointer; touch-action:manipulation;
   }
   .details-close:active{ transform:scale(.97); }
+  .logout-btn{
+    width:100%; margin-top:10px; padding:12px; border:1px solid rgba(255,92,108,.3); border-radius:14px;
+    background:var(--neg-soft); color:var(--neg); font-size:13px; font-weight:800;
+    cursor:pointer; touch-action:manipulation;
+  }
+  .logout-btn:active{ transform:scale(.97); }
+
+  /* ---------- welcome overlay ---------- */
+  .welcome-overlay{
+    position:fixed; inset:0; z-index:1000; display:none;
+    align-items:center; justify-content:center; padding:20px;
+    background:rgba(5,6,10,.8); backdrop-filter:blur(3px);
+  }
+  .welcome-overlay.visible{ display:flex; }
+  .welcome-card{
+    width:100%; max-width:360px; border-radius:22px; text-align:center;
+    background:var(--surface); border:1px solid var(--surface-border);
+    box-shadow:0 26px 60px -28px rgba(0,0,0,.85); padding:30px 24px;
+  }
+  .welcome-icon{
+    width:60px; height:60px; border-radius:50%; margin:0 auto 18px;
+    background:linear-gradient(135deg, var(--pos), #37e0a4);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 10px 24px -10px rgba(47,214,149,.55);
+  }
+  .welcome-icon svg{ width:28px; height:28px; stroke:#fff; stroke-width:2.4; }
+  .welcome-hello{ font-size:20px; font-weight:800; margin-bottom:6px; }
+  .welcome-sub{ font-size:13.5px; color:var(--muted); margin-bottom:22px; line-height:1.6; }
+  .welcome-sub b{ color:var(--text); font-weight:800; }
+  .welcome-continue{
+    width:100%; padding:14px; border:none; border-radius:14px;
+    background:linear-gradient(135deg, var(--accent), #7ea2ff); color:#fff;
+    font-size:14.5px; font-weight:800; cursor:pointer; touch-action:manipulation;
+  }
+  .welcome-continue:active{ transform:scale(.97); }
 </style>
 </head>
 <body>
@@ -339,11 +378,10 @@
   </div>
 </div>
 
-<div class="expire-badge" id="expireBadge">
-  <span class="dot"></span>
-  <span class="label">Expire in</span>
-  <span class="value" id="expireValue">—</span>
-</div>
+<button class="account-btn" id="accountBtn" type="button">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+  <span class="status-dot" id="statusDot"></span>
+</button>
 
 <div class="details-overlay" id="detailsOverlay">
   <div class="details-card">
@@ -352,7 +390,19 @@
     <div class="details-row"><span class="k">الملاحظة</span><span class="v" id="detailNote">—</span></div>
     <div class="details-row"><span class="k">صالح حتى</span><span class="v" id="detailExpiry">—</span></div>
     <div class="details-row"><span class="k">المدة المتبقية</span><span class="v" id="detailRemaining">—</span></div>
+    <button class="logout-btn" id="logoutBtn" type="button">تسجيل خروج (تسجيل دخول بكود آخر)</button>
     <button class="details-close" id="detailsCloseBtn" type="button">إغلاق</button>
+  </div>
+</div>
+
+<div class="welcome-overlay" id="welcomeOverlay">
+  <div class="welcome-card">
+    <div class="welcome-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+    </div>
+    <div class="welcome-hello" id="welcomeHello">مرحباً 👋</div>
+    <div class="welcome-sub" id="welcomeSub">تم التحقق من الكود بنجاح.</div>
+    <button class="welcome-continue" id="welcomeContinueBtn" type="button">متابعة إلى التطبيق</button>
   </div>
 </div>
 
@@ -437,6 +487,19 @@
   const codeInput = document.getElementById('codeInput');
   const unlockBtn = document.getElementById('unlockBtn');
   const lockMsg = document.getElementById('lockMsg');
+  const welcomeOverlay = document.getElementById('welcomeOverlay');
+  const welcomeHello = document.getElementById('welcomeHello');
+  const welcomeSub = document.getElementById('welcomeSub');
+  const welcomeContinueBtn = document.getElementById('welcomeContinueBtn');
+  let pendingUnlock = null;
+
+  welcomeContinueBtn.addEventListener('click', () => {
+    welcomeOverlay.classList.remove('visible');
+    if (pendingUnlock){
+      grantAccess(pendingUnlock.code, pendingUnlock.expiresAtMillis, pendingUnlock.note);
+      pendingUnlock = null;
+    }
+  });
 
   function showLockMsg(type, text){
     lockMsg.className = 'lock-msg ' + type;
@@ -447,7 +510,7 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ code, expiresAt: expiresAtMillis, note: note || '' }));
     lockScreen.classList.add('hidden');
     appRoot.style.display = '';
-    updateExpireBadge(code, expiresAtMillis, note);
+    updateAccountState(code, expiresAtMillis, note);
   }
 
   function clearAccess(){
@@ -473,10 +536,13 @@
     try{
       const result = await verifyCode(raw);
       if (result.ok){
+        showLockMsg('', '');
+        pendingUnlock = { code: raw, expiresAtMillis: result.expiresAtMillis, note: result.note || '' };
         const who = result.note ? result.note : 'مستخدم';
         const dateStr = result.expiresAtMillis ? new Date(result.expiresAtMillis).toLocaleDateString('ar-EG') : 'بدون تاريخ انتهاء';
-        showLockMsg('info', `مرحباً ${who} 👋 — الكود صالح حتى ${dateStr}`);
-        setTimeout(() => grantAccess(raw, result.expiresAtMillis, result.note), 900);
+        welcomeHello.textContent = `مرحباً ${who} 👋`;
+        welcomeSub.innerHTML = `تم التحقق من كودك بنجاح.<br>هذا الكود صالح حتى <b>${dateStr}</b>.`;
+        welcomeOverlay.classList.add('visible');
       } else {
         const messages = { invalid:'الكود غير صحيح', revoked:'تم إلغاء هذا الكود', expired:'انتهت صلاحية الكود' };
         showLockMsg('error', messages[result.reason] || 'تعذر التحقق من الكود');
@@ -505,14 +571,14 @@
         if (cached.expiresAt && Date.now() < cached.expiresAt){
           lockScreen.classList.add('hidden');
           appRoot.style.display = '';
-          updateExpireBadge(cached.code, cached.expiresAt, cached.note);
+          updateAccountState(cached.code, cached.expiresAt, cached.note);
           verifyCode(cached.code).then(result => {
             if (!result.ok){
               clearAccess();
               location.reload();
             } else {
               localStorage.setItem(STORAGE_KEY, JSON.stringify({ code: cached.code, expiresAt: result.expiresAtMillis, note: result.note || '' }));
-              updateExpireBadge(cached.code, result.expiresAtMillis, result.note);
+              updateAccountState(cached.code, result.expiresAtMillis, result.note);
             }
           }).catch(() => { /* لا يوجد إنترنت: يبقى الوصول المخزّن سارياً حتى الانتهاء */ });
           return;
@@ -525,17 +591,17 @@
 
   checkAccess();
 
-  /* ---------- expire badge + details ---------- */
-  const expireBadge = document.getElementById('expireBadge');
-  const expireValue = document.getElementById('expireValue');
+  /* ---------- account button + details + logout ---------- */
+  const accountBtn = document.getElementById('accountBtn');
+  const statusDot = document.getElementById('statusDot');
   const detailsOverlay = document.getElementById('detailsOverlay');
   const detailCode = document.getElementById('detailCode');
   const detailNote = document.getElementById('detailNote');
   const detailExpiry = document.getElementById('detailExpiry');
   const detailRemaining = document.getElementById('detailRemaining');
   const detailsCloseBtn = document.getElementById('detailsCloseBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
   let sessionInfo = null;
-  let badgeInterval = null;
 
   function formatRemaining(ms){
     if (ms <= 0) return 'منتهي';
@@ -548,26 +614,16 @@
     return `${Math.max(minutes,1)} د`;
   }
 
-  function renderBadge(){
-    if (!sessionInfo || !sessionInfo.expiresAtMillis){
-      expireBadge.classList.remove('visible');
-      return;
-    }
-    const remaining = sessionInfo.expiresAtMillis - Date.now();
-    expireValue.textContent = formatRemaining(remaining);
-    expireBadge.classList.add('visible');
-    expireBadge.classList.remove('warn','danger');
-    const dayMs = 86400000;
-    if (remaining <= 0) expireBadge.classList.add('danger');
-    else if (remaining <= dayMs) expireBadge.classList.add('danger');
-    else if (remaining <= 3 * dayMs) expireBadge.classList.add('warn');
-  }
-
-  function updateExpireBadge(code, expiresAtMillis, note){
+  function updateAccountState(code, expiresAtMillis, note){
     sessionInfo = { code, expiresAtMillis, note: note || '' };
-    renderBadge();
-    if (badgeInterval) clearInterval(badgeInterval);
-    badgeInterval = setInterval(renderBadge, 60000);
+    accountBtn.classList.add('visible');
+    accountBtn.classList.remove('warn','danger');
+    if (expiresAtMillis){
+      const remaining = expiresAtMillis - Date.now();
+      const dayMs = 86400000;
+      if (remaining <= dayMs) accountBtn.classList.add('danger');
+      else if (remaining <= 3 * dayMs) accountBtn.classList.add('warn');
+    }
   }
 
   function openDetails(){
@@ -584,9 +640,15 @@
   }
   function closeDetails(){ detailsOverlay.classList.remove('visible'); }
 
-  expireBadge.addEventListener('click', openDetails);
+  function logout(){
+    clearAccess();
+    location.reload();
+  }
+
+  accountBtn.addEventListener('click', openDetails);
   detailsCloseBtn.addEventListener('click', closeDetails);
   detailsOverlay.addEventListener('click', e => { if (e.target === detailsOverlay) closeDetails(); });
+  logoutBtn.addEventListener('click', logout);
 </script>
 
 <script>
