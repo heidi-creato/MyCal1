@@ -589,7 +589,6 @@
     }
   }
 
-  checkAccess();
 
   /* ---------- account button + details + logout ---------- */
   const accountBtn = document.getElementById('accountBtn');
@@ -659,6 +658,9 @@
   detailsCloseBtn.addEventListener('click', closeDetails);
   detailsOverlay.addEventListener('click', e => { if (e.target === detailsOverlay) closeDetails(); });
   logoutBtn.addEventListener('click', logout);
+
+  /* يجب أن يُستدعى هنا بعد تعريف كل المتغيرات أعلاه */
+  checkAccess();
 </script>
 
 <script>
@@ -727,6 +729,13 @@ function setupEventListeners(){
         commitField(field, input);
         input.focus();
       }
+    });
+    input.addEventListener('keydown', e => {
+      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+      e.preventDefault();
+      const i = FIELDS.indexOf(field) + (e.key === 'ArrowUp' ? -1 : 1);
+      if (i < 0 || i >= FIELDS.length) return;
+      document.getElementById(`${FIELDS[i]}-input`).focus();
     });
     input.addEventListener('blur', () => commitField(field, input));
     input.addEventListener('focus', () => { setTimeout(() => input.select(), 100); });
