@@ -283,15 +283,6 @@
   }
   @keyframes spin{ to{ transform:rotate(360deg); } }
 
-  /* ---------- user line (name + expiry) ---------- */
-  .userline{
-    text-align:center; direction:ltr; font-family:inherit;
-    padding:2px 48px 8px; line-height:1.35; display:none;
-  }
-  .userline.visible{ display:block; }
-  .userline .u-name{ font-size:11.5px; font-weight:700; color:var(--muted); letter-spacing:.2px; }
-  .userline .u-exp{ font-size:10px; font-weight:600; color:var(--muted); opacity:.75; letter-spacing:.3px; }
-
   /* ---------- account button & panel ---------- */
   .account-btn{
     position:fixed; top:calc(12px + var(--safe-t, 0px)); right:12px; z-index:60;
@@ -416,11 +407,6 @@
 </div>
 
 <div class="app" id="appRoot" style="display:none;">
-
-  <div class="userline" id="userLine">
-    <div class="u-name" id="userName"></div>
-    <div class="u-exp" id="userExpiry"></div>
-  </div>
 
   <div class="brandbar">
     <div class="brand">
@@ -638,19 +624,8 @@
     const d = new Date(ms);
     return pad2(d.getDate()) + '.' + pad2(d.getMonth()+1) + '.' + d.getFullYear();
   }
-  function renderUserLine(note, expiresAtMillis){
-    const line = document.getElementById('userLine');
-    const nameEl = document.getElementById('userName');
-    const expEl = document.getElementById('userExpiry');
-    if (!line || !nameEl || !expEl) return;
-    nameEl.textContent = 'Hey. ' + (note || '');
-    expEl.textContent = expiresAtMillis ? ('Expires: ' + formatDateEN(expiresAtMillis)) : 'No expiry';
-    line.classList.add('visible');
-  }
-
   function updateAccountState(code, expiresAtMillis, note){
     sessionInfo = { code, expiresAtMillis, note: note || '' };
-    renderUserLine(note, expiresAtMillis);
     accountBtn.classList.add('visible');
     accountBtn.classList.remove('warn','danger');
     if (expiresAtMillis){
